@@ -1,7 +1,7 @@
 'use client'
 
 import { Box, Button, Stack, TextField } from '@mui/material'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react' // Updated line
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -17,18 +17,17 @@ export default function Home() {
     // Check for empty messages
     if (!message.trim() || isLoading) return;
     setIsLoading(true)
-  // Don't send empty messages
-  
+
     // Clear the input field
     setMessage('');
-  
+
     // Add the user's message and a placeholder for the assistant's response
     setMessages((messages) => [
       ...messages,
       { role: 'user', content: message },
       { role: 'assistant', content: '' },
     ]);
-  
+
     try {
       // Send the message to the server
       const response = await fetch('/api/chat', {
@@ -38,21 +37,21 @@ export default function Home() {
         },
         body: JSON.stringify([...messages, { role: 'user', content: message }]),
       });
-  
+
       // Check if the response is okay
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-  
+
       // Get a reader to read the response body
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-  
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const text = decoder.decode(value, { stream: true });
-  
+
         // Update the messages with the assistant's response
         setMessages((messages) => {
           let lastMessage = messages[messages.length - 1];
@@ -65,7 +64,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
-  
+
       // Update the messages with an error message
       setMessages((messages) => [
         ...messages,
@@ -131,7 +130,7 @@ export default function Home() {
               </Box>
             </Box>
           ))}
-           <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
         </Stack>
         <Stack direction={'row'} spacing={2}>
           <TextField
