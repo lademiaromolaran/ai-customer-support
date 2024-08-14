@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { Box, Button, Stack, TextField } from '@mui/material'
-import { useState, useRef, useEffect } from 'react' // Updated line
+import { Box, Button, Stack, TextField } from '@mui/material';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Home() {
   const [messages, setMessages] = useState([
@@ -9,27 +9,22 @@ export default function Home() {
       role: 'assistant',
       content: "Hi! I'm the Headstarter support assistant. How can I help you today?",
     },
-  ])
-  const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  ]);
+  const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async () => {
-    // Check for empty messages
     if (!message.trim() || isLoading) return;
-    setIsLoading(true)
 
-    // Clear the input field
+    setIsLoading(true);
     setMessage('');
-
-    // Add the user's message and a placeholder for the assistant's response
-    setMessages((messages) => [
-      ...messages,
+    setMessages((prevMessages) => [
+      ...prevMessages,
       { role: 'user', content: message },
       { role: 'assistant', content: '' },
     ]);
 
     try {
-      // Send the message to the server
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -38,51 +33,49 @@ export default function Home() {
         body: JSON.stringify([...messages, { role: 'user', content: message }]),
       });
 
-      // Check if the response is okay
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
 
-      // Get a reader to read the response body
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let partialMessage = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const text = decoder.decode(value, { stream: true });
 
-        // Update the messages with the assistant's response
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1];
-          let otherMessages = messages.slice(0, messages.length - 1);
+        const text = decoder.decode(value, { stream: true });
+        partialMessage += text;
+
+        setMessages((prevMessages) => {
+          const lastMessage = prevMessages[prevMessages.length - 1];
           return [
-            ...otherMessages,
-            { ...lastMessage, content: lastMessage.content + text },
+            ...prevMessages.slice(0, -1),
+            { ...lastMessage, content: partialMessage },
           ];
         });
       }
     } catch (error) {
       console.error('Error:', error);
-
-      // Update the messages with an error message
-      setMessages((messages) => [
-        ...messages,
+      setMessages((prevMessages) => [
+        ...prevMessages,
         { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
       ]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false)
   };
 
-  const messagesEndRef = useRef(null)
+  const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <Box
@@ -139,11 +132,11 @@ export default function Home() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <Button variant="contained" onClick={sendMessage}>
+          <Button variant="contained" onClick={sendMessage} disabled={isLoading}>
             Send
           </Button>
         </Stack>
       </Stack>
     </Box>
-  )
+  );
 }
